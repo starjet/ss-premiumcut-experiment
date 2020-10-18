@@ -19,7 +19,8 @@ namespace Spine3.Unity
 public class NewBehaviourScript : MonoBehaviour
 {
     SkeletonAnimation skeletonAnimation = null;
-    //SkeletonAnimation bgSkeletonAnimation = null;
+    SkeletonAnimation bgSkeletonAnimation = null;
+    SkeletonAnimation fgSkeletonAnimation = null;
     RenderTexture mRenderTexture;
     Stack<int> xStack = new Stack<int>();
     Stack<int> yStack = new Stack<int>();
@@ -42,19 +43,29 @@ public class NewBehaviourScript : MonoBehaviour
     {
         try
         {
-            AssetBundle bundle = AssetBundle.LoadFromFile(@"N:\unity_premium_cut\1\card_cartoon_300830.unity3d.lz4.extracted"); //Path to uncompressed assetbundle
+            AssetBundle bundle = AssetBundle.LoadFromFile(@"N:\unity_premium_cut\1\card_cartoon_100669.unity3d.lz4.extracted"); //Path to uncompressed assetbundle
             string ffmpegPath = @"N:\unity_premium_cut\ffmpeg.exe"; //Path to ffmpeg executable
             Object[] assets1 = bundle.LoadAllAssets();
-            //string s = "";
             foreach (Object ob1 in assets1)
             {
+                //Character
                 if (ob1.GetType().ToString() == "Spine3.Unity.Spine3SkeletonDataAsset" && ob1.name.Contains("chara"))
                 {
                     skeletonAnimation = SkeletonAnimation.NewSkeletonAnimationGameObject((SkeletonDataAsset)ob1);
                     skeletonAnimation.state.SetAnimation(0, "_home", false);
                     skeletonAnimation.gameObject.GetComponent<MeshRenderer>().sortingLayerName = "back1";
                 }
-                //if (ob1.name.Contains("bg_SkeletonData"))
+
+                //Foreground
+                //if (ob1.GetType().ToString() == "Spine3.Unity.Spine3SkeletonDataAsset" && ob1.name.Contains("fg"))
+                //{
+                //    fgSkeletonAnimation = SkeletonAnimation.NewSkeletonAnimationGameObject((SkeletonDataAsset)ob1);
+                //    fgSkeletonAnimation.state.SetAnimation(0, "_home", true);
+                //    fgSkeletonAnimation.gameObject.GetComponent<MeshRenderer>().sortingLayerName = "Default";
+                //}
+
+                //Background
+                //if (ob1.GetType().ToString() == "Spine3.Unity.Spine3SkeletonDataAsset" && ob1.name.Contains("bg"))
                 //{
                 //    bgSkeletonAnimation = SkeletonAnimation.NewSkeletonAnimationGameObject((SkeletonDataAsset)ob1);
                 //    bgSkeletonAnimation.state.SetAnimation(0, "_home", true);
@@ -62,8 +73,13 @@ public class NewBehaviourScript : MonoBehaviour
                 //}
             }
             float[] skelTemp = { 0 };
+
+            //Use when rendering background and/or foreground
             //bgSkeletonAnimation.skeleton.GetBounds(out float skelX, out float skelY, out float skelWidth, out float skelHeight, ref skelTemp);
+
+            //Use when rendering character only
             skeletonAnimation.skeleton.GetBounds(out float skelX, out float skelY, out float skelWidth, out float skelHeight, ref skelTemp);
+
             mRenderTexture = new RenderTexture((int)skelWidth * 2, (int)skelHeight * 2, 32);
             Camera.main.targetTexture = mRenderTexture;
             Camera.main.orthographicSize = skelHeight;
@@ -74,7 +90,7 @@ public class NewBehaviourScript : MonoBehaviour
             {
                 recorder.isRecording = false;
                 string path = recorder.outputDir.GetFullPath();
-                try { Directory.CreateDirectory(path + "\\alpha"); } catch { }
+                try { Directory.CreateDirectory(path + "\\out"); } catch { }
                 string[] files = Directory.EnumerateFiles(path, "Alpha_*.png").ToArray();
                 int count = files.Length;
                 try
@@ -114,7 +130,7 @@ public class NewBehaviourScript : MonoBehaviour
                     {
                         string inAlphaPath = path + "\\Alpha_" + i.ToString("D4") + ".png";
                         string inPath = path + "\\FrameBuffer_" + i.ToString("D4") + ".png";
-                        string outPath = path + "\\alpha\\out_" + i.ToString("D4") + ".png";
+                        string outPath = path + "\\out\\out_" + i.ToString("D4") + ".png";
                         using (MagickImage inAlphaImage = new MagickImage(inAlphaPath))
                         {
                             MagickImage inImage = new MagickImage(inPath);
@@ -129,7 +145,7 @@ public class NewBehaviourScript : MonoBehaviour
                             //Use this if there is a lack of RAM (8 GB or less)
                             //inImage.Write(outPath);
                             //inImage.Dispose();
-                            
+
                             //Use this if there's enough RAM to go around (more than 8 GB)
                             framesToWrite.Add(outPath, inImage);
                         }
@@ -140,6 +156,30 @@ public class NewBehaviourScript : MonoBehaviour
                 {
                     frame.Value.Write(frame.Key);
                 }
+                Process ffmpeg = new Process();
+                path = path.Replace("/", "\\");
+                ffmpeg.StartInfo.FileName = ffmpegPath;
+
+                //Adjust encoding settings such as bitrate here
+                ffmpeg.StartInfo.Arguments = "-f image2 -i " + path + "\\out\\out_%04d.png -c:v libvpx -pix_fmt yuva420p -b:v 2M -auto-alt-ref 0 " + path + "\\out.webm";
+                
+                ffmpeg.Start();
+                ffmpeg.WaitForExit();
+
+                //Clear temporary frame files
+                foreach (string file in Directory.EnumerateFiles(path, "FrameBuffer_*.png"))
+                {
+                    File.Delete(file);
+                }
+                foreach (string file in Directory.EnumerateFiles(path, "Alpha_*.png"))
+                {
+                    File.Delete(file);
+                }
+                foreach (string file in Directory.EnumerateFiles(path + "\\out", "out_*.png"))
+                {
+                    File.Delete(file);
+                }
+
                 EditorApplication.isPlaying = false;
             };
         }
