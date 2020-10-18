@@ -20,7 +20,6 @@ public class NewBehaviourScript : MonoBehaviour
 {
     SkeletonAnimation skeletonAnimation = null;
     //SkeletonAnimation bgSkeletonAnimation = null;
-    //GameObject effectObject = null;
     RenderTexture mRenderTexture;
     Stack<int> xStack = new Stack<int>();
     Stack<int> yStack = new Stack<int>();
@@ -44,24 +43,14 @@ public class NewBehaviourScript : MonoBehaviour
         try
         {
             AssetBundle bundle = AssetBundle.LoadFromFile(@"N:\unity_premium_cut\1\card_cartoon_300830.unity3d.lz4.extracted"); //Path to uncompressed assetbundle
-            string ffmpegPath = ""; //Path to ffmpeg executable
+            string ffmpegPath = @"N:\unity_premium_cut\ffmpeg.exe"; //Path to ffmpeg executable
             Object[] assets1 = bundle.LoadAllAssets();
             //string s = "";
-            //SkeletonAnimation[] skelArray = { };
             foreach (Object ob1 in assets1)
             {
-                //s += "\n\n" + ob1.name + ": " + ob1.GetType().ToString();
-                //if (ob1.GetType().ToString() == "Spine3.Unity.Spine3SkeletonDataAsset" && !ob1.name.Contains("bg_SkeletonData"))
-                //{
-                //    skeletonAnimation = SkeletonAnimation.NewSkeletonAnimationGameObject((SkeletonDataAsset)ob1);
-                //    //skelArray.Append(skeletonAnimation);
-                //    skeletonAnimation.state.SetAnimation(0, "_home", false);
-                //    skeletonAnimation.gameObject.GetComponent<MeshRenderer>().sortingLayerName = "back1";
-                //}
                 if (ob1.GetType().ToString() == "Spine3.Unity.Spine3SkeletonDataAsset" && ob1.name.Contains("chara"))
                 {
                     skeletonAnimation = SkeletonAnimation.NewSkeletonAnimationGameObject((SkeletonDataAsset)ob1);
-                    //skelArray.Append(skeletonAnimation);
                     skeletonAnimation.state.SetAnimation(0, "_home", false);
                     skeletonAnimation.gameObject.GetComponent<MeshRenderer>().sortingLayerName = "back1";
                 }
@@ -71,20 +60,7 @@ public class NewBehaviourScript : MonoBehaviour
                 //    bgSkeletonAnimation.state.SetAnimation(0, "_home", true);
                 //    bgSkeletonAnimation.gameObject.GetComponent<MeshRenderer>().sortingLayerName = "back2";
                 //}
-                //if (ob1.GetType().ToString() == "UnityEngine.GameObject")
-                //{
-                //    effectObject = (GameObject)ob1;
-                //    Instantiate(effectObject);
-                //}
             }
-            //foreach (SkeletonAnimation anim in skelArray) {
-            //    anim.state.SetAnimation(0, "_home", true);
-            //}
-            //GUIUtility.systemCopyBuffer = s;
-            //skeletonAnimation.state.SetAnimation(0, "_home", true);
-            //bgSkeletonAnimation.state.SetAnimation(0, "_home", true);
-            //bgSkeletonAnimation.gameObject.GetComponent<MeshRenderer>().sortingLayerName = "back2";
-            //effectObject = Instantiate(effectObject);
             float[] skelTemp = { 0 };
             //bgSkeletonAnimation.skeleton.GetBounds(out float skelX, out float skelY, out float skelWidth, out float skelHeight, ref skelTemp);
             skeletonAnimation.skeleton.GetBounds(out float skelX, out float skelY, out float skelWidth, out float skelHeight, ref skelTemp);
@@ -96,9 +72,9 @@ public class NewBehaviourScript : MonoBehaviour
             recorder.isRecording = true;
             skeletonAnimation.AnimationState.Complete += delegate
             {
+                recorder.isRecording = false;
                 string path = recorder.outputDir.GetFullPath();
                 try { Directory.CreateDirectory(path + "\\alpha"); } catch { }
-                recorder.isRecording = false;
                 string[] files = Directory.EnumerateFiles(path, "Alpha_*.png").ToArray();
                 int count = files.Length;
                 try
